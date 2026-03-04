@@ -10,19 +10,16 @@ function App() {
   const API_BASE = "http://127.0.0.1:8000/api";
 
   useEffect(() => {
-    fetchStats();
-    fetchScans();
+    const loadData = async () => {
+      const statsResponse = await axios.get(`${API_BASE}/dashboard-stats/`);
+      setStats(statsResponse.data);
+
+      const scansResponse = await axios.get(`${API_BASE}/scans/`);
+      setScans(scansResponse.data);
+    };
+
+    loadData();
   }, []);
-
-  const fetchStats = async () => {
-    const response = await axios.get(`${API_BASE}/dashboard-stats/`);
-    setStats(response.data);
-  };
-
-  const fetchScans = async () => {
-    const response = await axios.get(`${API_BASE}/scans/`);
-    setScans(response.data);
-  };
 
   const fetchFindings = async (scanId) => {
     const response = await axios.get(`${API_BASE}/scans/${scanId}/findings/`);
