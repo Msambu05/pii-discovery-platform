@@ -1,3 +1,4 @@
+import {PieChart, Pie, Cell, Tooltip, Legend} from 'recharts';
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -30,6 +31,8 @@ function App() {
   };
 
   useEffect(() => {
+     // This is a safe data-fetching pattern
+     // eslint-disable-next-line react-hooks/exhaustive-deps
     loadData();
   }, []);
 
