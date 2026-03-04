@@ -1,5 +1,6 @@
 import {PieChart, Pie, Cell, Tooltip, Legend} from 'recharts';
 import { useEffect, useState } from "react";
+import { Piechart, Pie, Cell, Tooltip, Legend } from "recharts";
 import axios from "axios";
 
 function App() {
@@ -86,11 +87,30 @@ function App() {
 
       {/* Stats Section */}
       <h2>Statistics</h2>
-      <p>Total Scans: {stats.total_scans}</p>
-      <p>Total Findings: {stats.total_findings}</p>
-      <p>High Risk: {stats.risk_distribution.high}</p>
-      <p>Medium Risk: {stats.risk_distribution.medium}</p>
-      <p>Low Risk: {stats.risk_distribution.low}</p>
+    <p>Total Scans: {stats.total_scans}</p>
+    <p>Total Findings: {stats.total_findings}</p>
+
+    <h3>Risk Distribution</h3>
+
+    <PieChart width={400} height={300}>
+      <Pie
+        data={[
+          { name: "High", value: stats.risk_distribution.high },
+          { name: "Medium", value: stats.risk_distribution.medium },
+          { name: "Low", value: stats.risk_distribution.low },
+        ]}
+        dataKey="value"
+        nameKey="name"
+        outerRadius={100}
+        label
+      >
+        <Cell fill="#ff4d4f" />   {/* Red */}
+        <Cell fill="#faad14" />   {/* Orange */}
+        <Cell fill="#52c41a" />   {/* Green */}
+      </Pie>
+      <Tooltip />
+      <Legend />
+    </PieChart>
 
       <hr />
 
