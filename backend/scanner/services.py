@@ -1,6 +1,8 @@
 import re
 from django.utils import timezone
 from .models import Scan, Finding, PIIType
+import csv
+from io import TextIOWrapper
 
 
 def mask_value(value):
@@ -58,6 +60,46 @@ def run_text_scan(data_source, text):
             )
 
             total_findings += 1
+
+    scan.status = "COMPLETED"
+    scan.completed_at = timezone.now()
+    scan.total_findings = total_findings
+    scan.save()
+
+    return scan
+
+def run_csv_scan(data_source, file):
+    scan = Scan.objects.create(
+        data_source=data_source,
+        status="RUNNING",
+        started_at=timezone.now()
+    )
+
+    pii_types = PIIType.objects.all()
+    total_findings = 0
+
+    reader = csv.reader(TextIOWrapper(file, encoding='utf-8'))
+
+    for row_number, row in enumerate(reader, start=1):
+        for column_index, cell in enumerate(row):
+            for pii in pii_types:
+                pattern = re.compile(pii.regex_pattern)
+                matches = pattern.findall(str(cell))
+
+                for match in matches:
+                    masked = mask_value(match)
+                    risk = determine_risk(pii.name)
+
+                    Finding.objects.create(
+                        scan=scan,
+                        pii_type=pii,
+                        location=f"Row {row_number}, Column {column_index}",
+                        masked_value=masked,
+                        risk_level=risk,
+                        confidence_score=1.0
+                    )
+
+                    total_findings += 1
 
     scan.status = "COMPLETED"
     scan.completed_at = timezone.now()

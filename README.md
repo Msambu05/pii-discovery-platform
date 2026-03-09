@@ -111,16 +111,18 @@ Represents a discovered PII instance.
 4. ✅ CORS configuration for frontend-backend communication
 5. ✅ Basic React + Vite frontend setup
 6. ✅ Celery and Redis configuration (ready for async task processing)
+7. ✅ API views and endpoints for scanner operations
+8. ✅ URL routing for API endpoints
+9. ✅ Frontend UI components for:
+   - Dashboard with statistics
+   - Pie chart visualization (Recharts)
+   - Text scanning
+   - Scan history and findings viewer
+10. ✅ PII detection engine (regex-based text scanning)
 
 ### Pending Implementation
-1. ❌ API views and endpoints for scanner operations
-2. ❌ URL routing for API endpoints
-3. ❌ Frontend UI components for:
-   - Data source management
-   - Scan execution and monitoring
-   - Finding visualization and reporting
-4. ❌ PII detection engine (regex-based scanning)
-5. ❌ Celery task integration for background scanning
+1. ❌ CSV scan functionality (being fixed)
+2. ❌ Celery task integration for background scanning
 
 ## Getting Started
 
