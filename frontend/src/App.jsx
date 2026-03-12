@@ -9,6 +9,7 @@ function App() {
   const [findings, setFindings] = useState([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -27,6 +28,27 @@ function App() {
     } catch (error) {
       console.error("Error loading data:", error);
       setLoading(false);
+    }
+  };
+
+  // Handle CSV file selection
+  const uploadCSV = async () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      await axios.post(`${API_BASE}/scan-csv/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setSelectedFile(null);
+      await loadData(); // refresh dashboard
+    } catch (error) {
+      console.error("Error uploading CSV:", error);
     }
   };
 
@@ -78,8 +100,27 @@ function App() {
         onChange={(e) => setInputText(e.target.value)}
       />
       <br />
+      
       <button onClick={runScan} style={{ marginTop: "10px" }}>
         Run Scan
+      </button>
+
+      <hr />
+      <h2>Upload CSV File</h2>
+
+      <input
+        type="file"
+        accept=".csv"
+        onChange={(e) => setSelectedFile(e.target.files[0])}
+      />
+
+      <br />
+
+      <button
+        onClick={uploadCSV}
+        style={{ marginTop: "10px" }}
+      >
+        Upload & Scan CSV
       </button>
 
       <hr />
