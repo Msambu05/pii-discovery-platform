@@ -1,3 +1,4 @@
+import {PieChart, Pie, Cell, Tooltip, Legend} from 'recharts';
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -7,26 +8,55 @@ function App() {
   const [selectedScan, setSelectedScan] = useState(null);
   const [findings, setFindings] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
 
   const API_BASE = "http://127.0.0.1:8000/api";
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   // Load dashboard data
   const loadData = async () => {
     try {
+      setLoading(true);
+
       const statsResponse = await axios.get(`${API_BASE}/dashboard-stats/`);
       setStats(statsResponse.data);
 
       const scansResponse = await axios.get(`${API_BASE}/scans/`);
       setScans(scansResponse.data);
+
+      setLoading(false);
     } catch (error) {
       console.error("Error loading data:", error);
+      setLoading(false);
     }
   };
+
+  // Handle CSV file selection
+  const uploadCSV = async () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      await axios.post(`${API_BASE}/scan-csv/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setSelectedFile(null);
+      await loadData(); // refresh dashboard
+    } catch (error) {
+      console.error("Error uploading CSV:", error);
+    }
+  };
+
+  useEffect(() => {
+     // This is a safe data-fetching pattern
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadData();
+  }, []);
 
   const fetchFindings = async (scanId) => {
     try {
@@ -38,33 +68,8 @@ function App() {
     }
   };
 
-  // Upload CSV
-  const uploadCSV = async () => {
-    if (!selectedFile) {
-      alert("Please select a CSV file first");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-
-    try {
-      await axios.post(`${API_BASE}/scan-csv/`, formData);
-
-      setSelectedFile(null);
-      await loadData(); // refresh dashboard
-      alert("CSV scanned successfully");
-    } catch (error) {
-      console.error("Error uploading CSV:", error);
-    }
-  };
-
-  // Scan text function
-  const runTextScan = async () => {
-    if (!inputText.trim()) {
-      alert("Please enter text to scan");
-      return;
-    }
+  const runScan = async () => {
+    if (!inputText.trim()) return;
 
     try {
       await axios.post(`${API_BASE}/scan-text/`, {
@@ -72,41 +77,34 @@ function App() {
       });
 
       setInputText("");
-      await loadData(); // refresh dashboard
+      await loadData(); // refresh dashboard after scan
     } catch (error) {
-      console.error("Error running text scan:", error);
+      console.error("Error running scan:", error);
     }
   };
 
-  if (!stats) return <div>Loading...</div>;
+  if (loading) return <div style={{ padding: "20px" }}>Loading dashboard...</div>;
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>PII Discovery Dashboard</h1>
 
+      {/* Scan Input Section */}
       <hr />
-      {/*Text scan section*/}
-      <h2>Scan Text</h2>
-
+      <h2>Run New Scan</h2>
       <textarea
         rows="4"
         cols="60"
-        placeholder="Paste text to scan for PII..."
+        placeholder="Paste text to scan..."
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
       />
-
       <br />
-
-      <button
-        type="button"
-        onClick={runTextScan}
-        style={{ marginTop: "10px" }}
-      >
-        Run Text Scan
+      
+      <button onClick={runScan} style={{ marginTop: "10px" }}>
+        Run Scan
       </button>
 
-      {/* CSV Upload Section */}
       <hr />
       <h2>Upload CSV File</h2>
 
@@ -119,7 +117,6 @@ function App() {
       <br />
 
       <button
-        type="button"
         onClick={uploadCSV}
         style={{ marginTop: "10px" }}
       >
@@ -128,23 +125,41 @@ function App() {
 
       <hr />
 
-      {/* Stats */}
+      {/* Stats Section */}
       <h2>Statistics</h2>
-      <p>Total Scans: {stats.total_scans}</p>
-      <p>Total Findings: {stats.total_findings}</p>
-      <p>High Risk: {stats.risk_distribution.high}</p>
-      <p>Medium Risk: {stats.risk_distribution.medium}</p>
-      <p>Low Risk: {stats.risk_distribution.low}</p>
+    <p>Total Scans: {stats.total_scans}</p>
+    <p>Total Findings: {stats.total_findings}</p>
+
+    <h3>Risk Distribution</h3>
+
+    <PieChart width={400} height={300}>
+      <Pie
+        data={[
+          { name: "High", value: stats.risk_distribution.high },
+          { name: "Medium", value: stats.risk_distribution.medium },
+          { name: "Low", value: stats.risk_distribution.low },
+        ]}
+        dataKey="value"
+        nameKey="name"
+        outerRadius={100}
+        label
+      >
+        <Cell fill="#ff4d4f" />   {/* Red */}
+        <Cell fill="#faad14" />   {/* Orange */}
+        <Cell fill="#52c41a" />   {/* Green */}
+      </Pie>
+      <Tooltip />
+      <Legend />
+    </PieChart>
 
       <hr />
 
-      {/* Scans */}
+      {/* Scans Section */}
       <h2>Scans</h2>
       <ul>
         {scans.map((scan) => (
           <li key={scan.id}>
             Scan #{scan.id} — {scan.status} — Findings: {scan.total_findings}
-
             <button
               style={{ marginLeft: "10px" }}
               onClick={() => fetchFindings(scan.id)}
@@ -155,16 +170,16 @@ function App() {
         ))}
       </ul>
 
-      {/* Findings */}
+      {/* Findings Section */}
       {selectedScan && (
         <>
           <hr />
           <h2>Findings for Scan #{selectedScan}</h2>
-
           <ul>
             {findings.map((finding) => (
               <li key={finding.id}>
-                {finding.pii_type} — {finding.masked_value} — Risk: {finding.risk_level}
+                {finding.pii_type} — {finding.masked_value} — Risk:{" "}
+                {finding.risk_level}
               </li>
             ))}
           </ul>

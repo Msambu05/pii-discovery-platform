@@ -1,6 +1,8 @@
 import re
 from django.utils import timezone
 from .models import Scan, Finding, PIIType
+import csv
+from io import TextIOWrapper
 
 
 def mask_value(value):
@@ -66,15 +68,7 @@ def run_text_scan(data_source, text):
 
     return scan
 
-import csv
-import io
-
-
 def run_csv_scan(data_source, file):
-    """
-    Runs a synchronous CSV scan.
-    """
-
     scan = Scan.objects.create(
         data_source=data_source,
         status="RUNNING",
@@ -84,18 +78,13 @@ def run_csv_scan(data_source, file):
     pii_types = PIIType.objects.all()
     total_findings = 0
 
-    # Read CSV file
-    decoded_file = file.read().decode("utf-8")
-    csv_reader = csv.reader(io.StringIO(decoded_file))
+    reader = csv.reader(TextIOWrapper(file, encoding='utf-8'))
 
-    for row_number, row in enumerate(csv_reader):
-
-        for column in row:
-            text = str(column)
-
+    for row_number, row in enumerate(reader, start=1):
+        for column_index, cell in enumerate(row):
             for pii in pii_types:
                 pattern = re.compile(pii.regex_pattern)
-                matches = pattern.findall(text)
+                matches = pattern.findall(str(cell))
 
                 for match in matches:
                     masked = mask_value(match)
@@ -104,7 +93,7 @@ def run_csv_scan(data_source, file):
                     Finding.objects.create(
                         scan=scan,
                         pii_type=pii,
-                        location=f"ROW_{row_number}",
+                        location=f"Row {row_number}, Column {column_index}",
                         masked_value=masked,
                         risk_level=risk,
                         confidence_score=1.0
