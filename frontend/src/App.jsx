@@ -1,6 +1,5 @@
 import {PieChart, Pie, Cell, Tooltip, Legend} from 'recharts';
 import { useEffect, useState } from "react";
-import { Piechart, Pie, Cell, Tooltip, Legend } from "recharts";
 import axios from "axios";
 
 function App() {
