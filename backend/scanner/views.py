@@ -1,11 +1,12 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from django.db.models import Count
 from .serializers import ScanSerializer, FindingSerializer
-from .models import Scan, Finding
-from .models import DataSource
-from .services import run_text_scan
+from .models import Scan, Finding,  DataSource
+from .services import run_text_scan, run_csv_scan
+from django.utils import timezone
 
 
 @api_view(["POST"])
@@ -22,6 +23,27 @@ def scan_text(request):
     )
 
     scan = run_text_scan(data_source, text)
+
+    return Response({
+        "scan_id": scan.id,
+        "status": scan.status,
+        "total_findings": scan.total_findings
+    })
+
+@api_view(["POST"])
+@parser_classes([MultiPartParser, FormParser])
+def scan_csv(request):
+    file = request.FILES.get("file")
+
+    if not file:
+        return Response({"error": "No file uploaded"}, status=400)
+
+    data_source, _ = DataSource.objects.get_or_create(
+        name="CSV Upload",
+        source_type="FILE"
+    )
+
+    scan = run_csv_scan(data_source, file)
 
     return Response({
         "scan_id": scan.id,

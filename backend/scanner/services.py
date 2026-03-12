@@ -65,3 +65,56 @@ def run_text_scan(data_source, text):
     scan.save()
 
     return scan
+
+import csv
+import io
+
+
+def run_csv_scan(data_source, file):
+    """
+    Runs a synchronous CSV scan.
+    """
+
+    scan = Scan.objects.create(
+        data_source=data_source,
+        status="RUNNING",
+        started_at=timezone.now()
+    )
+
+    pii_types = PIIType.objects.all()
+    total_findings = 0
+
+    # Read CSV file
+    decoded_file = file.read().decode("utf-8")
+    csv_reader = csv.reader(io.StringIO(decoded_file))
+
+    for row_number, row in enumerate(csv_reader):
+
+        for column in row:
+            text = str(column)
+
+            for pii in pii_types:
+                pattern = re.compile(pii.regex_pattern)
+                matches = pattern.findall(text)
+
+                for match in matches:
+                    masked = mask_value(match)
+                    risk = determine_risk(pii.name)
+
+                    Finding.objects.create(
+                        scan=scan,
+                        pii_type=pii,
+                        location=f"ROW_{row_number}",
+                        masked_value=masked,
+                        risk_level=risk,
+                        confidence_score=1.0
+                    )
+
+                    total_findings += 1
+
+    scan.status = "COMPLETED"
+    scan.completed_at = timezone.now()
+    scan.total_findings = total_findings
+    scan.save()
+
+    return scan
