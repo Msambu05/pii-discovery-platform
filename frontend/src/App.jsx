@@ -46,7 +46,10 @@ function App() {
       });
 
       setSelectedFile(null);
-      await loadData(); // refresh dashboard
+      //await loadData(); // refresh dashboard replaced with the below 2 lines
+      await fetchStats(); // refresh stats
+      await fetchScans(); // refresh scans
+
     } catch (error) {
       console.error("Error uploading CSV:", error);
     }
@@ -77,7 +80,9 @@ function App() {
       });
 
       setInputText("");
-      await loadData(); // refresh dashboard after scan
+      //await loadData(); // refresh dashboard after scan
+      await fetchStats(); // refresh stats
+      await fetchScans(); // refresh scans
     } catch (error) {
       console.error("Error running scan:", error);
     }
