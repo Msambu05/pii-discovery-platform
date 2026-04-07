@@ -183,5 +183,3 @@ Currently using SQLite (`db.sqlite3`). For production, update `DATABASES` in `se
 6. **User Authentication**: Add user authentication and authorization
 
 ## License
-
-This project is for demonstration purposes.
